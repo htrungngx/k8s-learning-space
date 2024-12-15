@@ -7,7 +7,13 @@ This repo contains my knowledge, experiences, errors while learning and implemen
 ### On-prem
 
 There are 2 ways to install k8s on prem (manual and automatic installation)
-1. Manual: More time-consuming, require more debugging technical skills => More control over cluster
+
+<details>
+
+<summary>1. Manual Installation: More time-consuming, require more debugging technical skills => More control over cluster</summary>
+ 
+More time-consuming, require more debugging technical skills => More control over cluster
+
 Using ```kubeadm```
 This instruction will install k8s on prem with 2 concepts for different purpose, depends on project (scalability, size,..). 1 master 2 nodes or 3 master 3 nodes (master acts as workers)
 ***NOTE***
@@ -99,11 +105,61 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 
 
+</details> 
+<details> 
+<summary>2. Automatic Installation: Faster, easier but less control over cluster and might not be used the latest version </summary>
+- Using ```kubespray, RKE, kops```
+</details> 
 
-
-2. Automatic: Faster, easier but less control over cluster and might not be used the latest version 
-    - Using ```kubespray, RKE, kops```
 
 ### Cloud
+Follow this link to install k8s on [GKE](https://medium.com/finnovate-io/setting-up-a-kubernetes-cluster-in-gcp-5903c3dc46f1)
 
 
+## K8s
+### Why K8s use yaml format? 
+- Simple syntax => Easy to read/write/accessible to develop and maintain
+- Support Hierarchical data => Handles nested and hierarchical structures well
+- Large Support Community 
+
+<details> 
+<summary>apiVersion </summary>
+- Specifies API version of K8s resource
+
+- Why need?
+    - K8s evolves overtime and resources will have multiple versions => apiVersion ensures compatibility between cluster and resource definition
+    > apiVersion: v1
+
+    > apiVersion: apps/v1
+    * V1: Core group for resources: Pods, Services
+    * app/v1: For Deployments, Stateful, ...
+
+</details> 
+
+<details> 
+<summary>Kind </summary>
+- Specifies type of k8s resources by being defined
+
+- Why need?
+    - Kinds tell k8s what resource you're creating or managing (Pod, Service, Deployment, Ingress,...)
+    > kind: Pod
+
+    > kind: Deployment
+
+</details> 
+
+</details>
+
+<details> 
+<summary>metadata </summary>
+- Contains metadata information about resources such as namespace, labels, annotation,...
+
+- Why need?
+    - Helps k8s identify, sort and categorize resources
+    - Key fields:
+        - name: Unique name for resource within namespace
+        - namespace: Logical group for resources
+        - labels: key-value pairs for organizing and selecting resources
+        - annotations: key-value pairs for attach additional metadata
+
+</details> 
