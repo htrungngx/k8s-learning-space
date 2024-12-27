@@ -36,7 +36,8 @@ echo -e "192.168.1.101 lab-k8s-master1n192.168.1.102 lab-k8s-master2n192.168.1.1
 ```
 
 - Update and Install new system packages
-```sudo apt update -y && sudo apt upgrade -y
+```
+sudo apt update -y && sudo apt upgrade -y
 ```
 - Create new user (It's not recommend to control k8s with user root)
 ```
@@ -48,7 +49,7 @@ usermod -aG sudo devops #add devops user to sudoer group
 
 - Disable swap
 ```
-sudo swappoff -a
+sudo swapoff -a
 sudo sed -i '/swap.img/s/^/#/' /etc/fstab
 ```
 
@@ -117,6 +118,13 @@ Follow this link to install k8s on [GKE](https://medium.com/finnovate-io/setting
 
 
 ## K8s
+
+### K8s management tools
+
+- Commandline: K9s
+- Website: Rancher, kubedashboard
+- Desktop app: Lens (k8s) 
+
 ### Why K8s use yaml format? 
 - Simple syntax => Easy to read/write/accessible to develop and maintain
 - Support Hierarchical data => Handles nested and hierarchical structures well
@@ -163,3 +171,229 @@ Follow this link to install k8s on [GKE](https://medium.com/finnovate-io/setting
         - annotations: key-value pairs for attach additional metadata
 
 </details> 
+
+<details> 
+<summary>spec </summary>
+- Define DESIRED state or configuration of resource
+
+- Why need?
+    - Outlines how K8s should create or manage resource, 
+    - Example
+        ```
+        spec:
+            containers:
+            - name: nginx-container
+                image: nginx:1.21
+                ports:
+                - containerPort: 80
+        ```
+    - 
+
+</details> 
+
+<br>
+
+### K8s Components
+
+1. Namespace
+
+- A virtual cluster within physical cluster, used to isolate and organize resources (Pods, Services, ConfigMaps,..) withing k8s cluster
+- Imagine ```namespace``` is a logic grouping mechanism for management
+    ![namespace](images/k8s-namespace.png)
+    ![namespace](images/k8s-namespace2.png)
+
+
+- Use for different apps, environment (prod, staging, dev,..) => enhance security, roles, pricing, resource management
+- Commands:
+    - Listing namespace
+        ```
+        kubectl get namespace #Return all available namespace
+
+        #OR
+
+        kubectl get ns
+        ```
+    - Create new namespace
+        ```
+        kubectl create ns project-1
+        ```
+    - Delete
+        ```
+        kubectl delete ns project-1
+        ```
+    - For IAC => Create ns.yaml
+        ```
+        # ns.yaml
+        apiVersion: v1
+            kind: Namespace
+            metadata:
+                name: project-1
+
+        #kubectl apply -f ns.yaml
+        ```
+
+    - Restrict resource for namespace: define resource usage for each namespace
+        ```
+        # esourceQouta.yaml
+        apiVersion: v1
+            kind: ResourceQuota
+            metadata:
+                name: mem-cpu-quota
+                namespace: project-1
+            spec:
+                hard: 
+                    requests.cpu: "2"
+                    requests.mem: "4"
+        #kubectl apply -f resourceQouta.yaml
+        ```
+
+<br>
+2. Pod
+
+- A smallest deployable unit 
+- Represent a group of 1 or many containers with SHARED storage, network (IP addresses, ports) and namespace
+- Pods are designed to be short-lived and disposable, if they're fail, k8s will schedule it on different node.
+- Pod in a K8s cluster are used in 2 main ways:
+    - Pods that run a single containers (1 container per pod): Most use case, pod will wrap around container, K8s manages pod instead of container
+    - Pod that run multiple containers ( more than 1 container per pod): Pod composed multiple containers and need to share resources
+
+- Template:
+    ```
+    apiVersion: v1
+    kind: Pod
+    metadata:
+    name: my-pod
+    labels:
+        app: my-app
+    spec:
+    containers:
+        - name: my-container
+        image: nginx:latest
+        ports:
+            - containerPort: 80
+
+    ```
+- Lifecycle: Pending > Running > Scheduled > Failed > Unknown (State of pod can not be determined)
+- Commands:
+    * List all Pods (in current namespace)
+
+        ```
+        kubectl get pods
+        ```
+
+        ```
+        kubectl get pods --all-namespace
+        ```
+
+        ```
+        kubectl get pods -o wide #List pod with detailed information
+        ```
+    
+    * Describe detailed info about 1 pod
+        ```
+        kubectl describe pod <name>
+        ```
+    * Describe logs pod
+        ```
+        #Describe logs of a container in a pod
+        kubectl logs <pod-name>
+
+        #Describe log of specific container in a pod
+        kubectl logs <pod-name> -c <container-name>
+        ```
+    * Execute commands in pod
+        ```
+        #Open shell inside a pod
+        kubectl exec -it <pod-name> -- /bin/bash
+
+        #Run specific command in a pod
+        kubectl exec <pod-name> -- <command>
+        ```
+    * Delete pod
+        ```
+        #Delete pod
+        kubectl delete pod <pod-name> --namespace
+        
+        #Delete all pod
+        kubectl delete all pod <pod-name> --namespace
+        ```
+ 
+
+<br>
+
+2. Deployment
+- Defines the desired state of pods and make sure the actual state matches the desired state
+Example: Desired ReplicaSet has 3 pods, if 1 pod fails, it creates 1 new
+- Used to create and manage ReplicaSet => ensures the availability of the specified number of idential pods
+- Ideally for managing stateless applications => Focus on scaling and reliability 
+- Sample:
+  ```
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+    name: nginx-deployment
+    namespace:
+    labels:
+        app: nginx
+    spec:
+    replicas: 3  # Desired number of Pod replicas
+    selector:
+        matchLabels:
+        app: nginx  # Label selector to match Pods
+    template:
+        metadata:
+        labels:
+            app: nginx
+        spec:
+        containers:
+        - name: nginx
+            image: nginx:1.21.6  # Container image
+            ports:
+            - containerPort: 80  # Port exposed by the container
+
+  ```
+
+- Commands:
+
+  * Create deployment:
+    ```
+    kubectl apply -f deployment.yaml
+    ```
+  * Check status deployment
+    ```
+    kubectl get deployments --namespace namespace
+    ```
+  * Check replicas set:
+    ```
+    kubectl get rs --namespace namespace
+    ```
+  * Set image (Update version):
+    ```
+    kubectl edit deployment/<ten-deployment> <ten-container>=<ten-image>:<tag-moi>
+    ```
+  * Check rollout status:
+    ```
+    kubectl rollout status deployment/<ten-deployment> <ten-container>=<ten-image>:<tag-moi>
+    ```
+  * Scale deployment:
+    ```
+    kubectl scale deployment --replicas=<replicas-number>
+
+    ```
+- Deployment strategy 
+
+    * Rolling update: Gradually replace old pods with new ones while ensuring app remains stable during update
+      
+      * Ensures that a specified number of pods are always running, controlled by the maxUnavailable and maxSurge parameters.
+      * Minimal downtime.
+      * Works well for applications that can handle changes incrementally.
+      * Can specify update speed by tuning parameters like maxUnavailable*
+
+    * Recreate: Stops all existing pods before creating new ones, leading to some downtime.
+      
+      * Downtime occurs during the update process.
+      * Simpler than Rolling Update.
+      * Suitable for stateful applications or those that can't handle multiple versions running simultaneously.
+    
+
+1. 
